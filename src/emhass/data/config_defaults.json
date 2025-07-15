@@ -1,6 +1,6 @@
 {
   "logging_level": "INFO",
-  "costfun": "profit",
+  "costfun": "cost",
   "optimization_time_step": 30,
   "historic_days_to_retrieve": 9,
   "method_ts_round": "nearest",
@@ -18,16 +18,14 @@
   "battery_dynamic_min": -0.9,
   "weight_battery_discharge": 0.0,
   "weight_battery_charge": 0.0,
-  "sensor_power_photovoltaics": "sensor.power_photovoltaics",
-  "sensor_power_photovoltaics_forecast": "sensor.p_pv_forecast",
-  "sensor_power_load_no_var_loads": "sensor.power_load_no_var_loads",
+  "sensor_power_photovoltaics": "",
+  "sensor_power_photovoltaics_forecast": "",
+  "sensor_power_load_no_var_loads": "",
   "sensor_replace_zero": [
-    "sensor.power_photovoltaics",
-    "sensor.p_pv_forecast"
+ 
   ],
   "sensor_linear_interp": [
-    "sensor.power_photovoltaics",
-    "sensor.power_load_no_var_loads"
+
   ],
   "load_negative": false,
   "set_zero_min": true,
@@ -46,7 +44,7 @@
   ],
   "weather_forecast_method": "open-meteo",
   "open_meteo_cache_max_age": 30,
-  "load_forecast_method": "naive",
+  "load_forecast_method": "csv",
   "delta_forecast_daily": 1,
   "load_cost_forecast_method": "hp_hc_periods",
   "start_timesteps_of_each_deferrable_load": [
@@ -60,18 +58,18 @@
   "load_peak_hour_periods": {
     "period_hp_1": [
       {
-        "start": "02:54"
+        "start": "07:30"
       },
       {
-        "end": "15:24"
+        "end": "10:00"
       }
     ],
     "period_hp_2": [
       {
-        "start": "17:24"
+        "start": "17:30"
       },
       {
-        "end": "20:24"
+        "end": "20:30"
       }
     ]
   },

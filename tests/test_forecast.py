@@ -238,17 +238,18 @@ class TestForecast(unittest.TestCase):
             self.fcst.validation_r2, -1.0, "R² score should be at least -1"
         )
 
-        # import plotly.express as px
-        # data_to_plot = self.fcst.P_PV_forecast_validation[["forecast", "adjusted_forecast"]].reset_index()
-        # fig = px.line(
-        #     data_to_plot,
-        #     x="index",  # Assuming the index is the timestamp
-        #     y=["forecast", "adjusted_forecast"],
-        #     labels={"index": "Time", "value": "Power (W)", "variable": "Forecast Type"},
-        #     title="Forecast vs Adjusted Forecast",
-        #     template='presentation'
-        # )
-        # fig.show()
+        import plotly.express as px
+        data_to_plot = self.fcst.P_PV_forecast_validation[["forecast", "adjusted_forecast"]].reset_index()
+        fig = px.line(
+            data_to_plot,
+            x="index",  # Assuming the index is the timestamp
+            y=["forecast", "adjusted_forecast"],
+            labels={"index": "Time", "value": "Power (W)", "variable": "Forecast Type"},
+            title="Forecast vs Adjusted Forecast",
+            template='presentation'
+        )
+        fig.show()
+        time.sleep(20)
 
     # Test output weather forecast using openmeteo with mock get request data
     def test_get_weather_forecast_openmeteo_method_mock(self):

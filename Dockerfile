@@ -116,13 +116,13 @@ RUN apt-get remove --purge -y --auto-remove \
     ninja-build \
     && rm -rf /var/lib/apt/lists/*
 
-ENTRYPOINT [ "uv", "run", "--frozen", "gunicorn", "emhass.web_server:create_app()" ]
+# ENTRYPOINT [ "uv", "run", "--frozen", "gunicorn", "emhass.web_server:create_app()" ]
 
 # for running Unittest
-#COPY tests/ /app/tests
+COPY tests/ /app/tests
 #RUN apt-get update &&  apt-get install python3-requests-mock -y
-#COPY data/ /app/data/
-#ENTRYPOINT ["uv","run","unittest","discover","-s","./tests","-p","test_*.py"]
+COPY data/ /app/data/
+ENTRYPOINT ["uv","run","unittest","discover","-s","./tests","-p","test_*.py"]
 
 # Example of 32 bit specific 
 # try, symlink apt cbc, to pulp cbc, in python directory (for 32bit)

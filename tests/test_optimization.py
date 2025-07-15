@@ -518,7 +518,7 @@ class TestOptimization(unittest.TestCase):
             def_total_timestep=None,
             def_start_timestep=def_start_timestep,
             def_end_timestep=def_end_timestep,
-        )
+        )  
         self.assertIsInstance(self.opt_res_dayahead, type(pd.DataFrame()))
         self.assertTrue("P_batt" in self.opt_res_dayahead.columns)
         self.assertTrue("SOC_opt" in self.opt_res_dayahead.columns)
