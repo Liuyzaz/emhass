@@ -1,0 +1,32 @@
+{
+    "deferrables": [
+        {
+            "name": "P_deferrable0",
+            "power_w": 1000,
+            "start_hour": 19,
+            "end_hour": 20,
+            "duration_hours": 1.0
+        },
+        {
+            "name": "P_deferrable1",
+            "power_w": 2400,
+            "start_hour": 6,
+            "end_hour": 7,
+            "duration_hours": 1.0
+        },
+        {
+            "name": "P_deferrable2",
+            "power_w": 3000,
+            "start_hour": 21,
+            "end_hour": 22,
+            "duration_hours": 1.0
+        }
+    ],
+    "optimization_scenarios": [
+        "battery",
+        "pv",
+        "all",
+        "na",
+        "custom"
+    ]
+}
