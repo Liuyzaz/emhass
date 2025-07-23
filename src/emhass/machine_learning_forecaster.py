@@ -13,9 +13,11 @@ from skforecast.model_selection import (
 )
 from skforecast.recursive import ForecasterRecursive
 from sklearn.linear_model import ElasticNet, LinearRegression
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.neighbors import KNeighborsRegressor
-
+from sklearn.svm import SVR
+import lightgbm as lgb
+# from pmdarima import auto_arima
 from emhass import utils
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -59,7 +61,8 @@ class MLForecaster:
             Example: `sensor.power_load_no_var_loads`.
         :type var_model: str
         :param sklearn_model: The `scikit-learn` model that will be used. For now only \
-            this options are possible: `LinearRegression`, `ElasticNet` and `KNeighborsRegressor`.
+            this options are possible: `LinearRegression`, `ElasticNet` and `KNeighborsRegressor`.\
+            Advanced models: `LightGBM`, `SVR`, `ARIMA`
         :type sklearn_model: str
         :param num_lags: The number of auto-regression lags to consider. A good starting point \
             is to fix this as one day. For example if your time step is 30 minutes, then fix this \
@@ -106,6 +109,7 @@ class MLForecaster:
         perform_backtest: bool | None = False,
         # #added code for tuning days
         tuning_days: str | None = "5days",
+        eval_metrics: bool | None = True,
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
         r"""The fit method to train the ML model.
 
@@ -115,6 +119,10 @@ class MLForecaster:
         :param perform_backtest: If `True` then a back testing routine is performed to evaluate \
             the performance of the model on the complete train set, defaults to False
         :type perform_backtest: Optional[bool], optional
+        :param tuning_days: Number of days to use for tuning, defaults to "5days"
+        :type tuning_days: Optional[str], optional
+        :param eval_metrics: If True, calculate and log additional evaluation metrics (RMSE, MAE, MAPE), defaults to True
+        :type eval_metrics: Optional[bool], optional
         :return: The DataFrame containing the forecast data results without and with backtest
         :rtype: Tuple[pd.DataFrame, pd.DataFrame]
         """
@@ -148,6 +156,24 @@ class MLForecaster:
             base_model = ElasticNet()
         elif self.sklearn_model == "KNeighborsRegressor":
             base_model = KNeighborsRegressor()
+        # Add advanced models:
+        elif self.sklearn_model == "LightGBM":
+            base_model = lgb.LGBMRegressor(verbose=-1)
+        elif self.sklearn_model == "SVR":
+                # Create a pipeline with preprocessing steps
+            from sklearn.preprocessing import StandardScaler
+            from sklearn.pipeline import Pipeline
+            
+            # Replace the basic SVR with a pipeline that includes scaling
+            base_model = Pipeline([
+                ('scaler', StandardScaler()),
+                ('svr', SVR(kernel='rbf', C=1.0, gamma='scale', epsilon=0.1))
+            ])
+        # elif self.sklearn_model == "ARIMA":
+        #     # ARIMA is handled separately as it doesn't use ForecasterRecursive
+        #     self._fit_arima_model()
+        #     # Return early as ARIMA is handled differently
+        #     return self._arima_results()
         else:
             self.logger.error(
                 "Passed sklearn model "
@@ -173,6 +199,10 @@ class MLForecaster:
         self.logger.info(
             f"Prediction R2 score of fitted model on test data: {pred_metric}"
         )
+        # Add calculation of additional metrics if requested
+        if eval_metrics:
+            self._calculate_metrics(self.data_test[self.var_model], predictions)
+        
         # Packing results in a DataFrame
         df_pred = pd.DataFrame(
             index=self.data_exo.index, columns=["train", "test", "pred"]
@@ -210,6 +240,54 @@ class MLForecaster:
             df_pred_backtest["train"] = self.data_exo[self.var_model]
             df_pred_backtest["pred"] = predictions_backtest
         return df_pred, df_pred_backtest
+    
+    # def _fit_arima_model(self):
+    #     """Fit ARIMA model using pmdarima's auto_arima."""
+    #     self.logger.info("Training an ARIMA model")
+    #     start_time = time.time()
+        
+    #     # Auto ARIMA will find the best order for an ARIMA model
+    #     self.arima_model = auto_arima(
+    #         self.data_train[self.var_model],
+    #         exogenous=self.data_train.drop(self.var_model, axis=1),
+    #         seasonal=True,
+    #         m=24,  # Daily seasonality (adjust based on data frequency)
+    #         suppress_warnings=True,
+    #         error_action="ignore",
+    #         trace=True if self.logger.level <= logging.INFO else False
+    #     )
+        
+    #     self.logger.info(f"Elapsed time for ARIMA model fit: {time.time() - start_time}")
+        
+    #     # Make prediction for test period
+    #     self.arima_predictions = self.arima_model.predict(
+    #         n_periods=self.steps,
+    #         exogenous=self.data_test.drop(self.var_model, axis=1)
+    #     )
+        
+    #     # Convert to Series with datetime index
+    #     self.arima_predictions = pd.Series(
+    #         self.arima_predictions,
+    #         index=self.data_test.index
+    #     )
+        
+    #     # Calculate metrics
+    #     pred_metric = r2_score(self.data_test[self.var_model], self.arima_predictions)
+    #     self.logger.info(f"ARIMA model R2 score on test data: {pred_metric}")
+        
+    #     if hasattr(self, '_calculate_metrics'):
+    #         self._calculate_metrics(self.data_test[self.var_model], self.arima_predictions)
+
+    # def _arima_results(self):
+    #     """Package ARIMA results into DataFrames similar to other models."""
+    #     df_pred = pd.DataFrame(
+    #         index=self.data_exo.index, columns=["train", "test", "pred"]
+    #     )
+    #     df_pred["train"] = self.data_train[self.var_model]
+    #     df_pred["test"] = self.data_test[self.var_model]
+    #     df_pred.loc[self.arima_predictions.index, "pred"] = self.arima_predictions
+        
+    #     return df_pred, None  # No backtest results for ARIMA
 
     def predict(self, data_last_window: pd.DataFrame | None = None) -> pd.Series:
         """The predict method to generate forecasts from a previously fitted ML model.
@@ -328,6 +406,43 @@ class MLForecaster:
                         ),
                     }
                     return search_space
+            # Add new hyperparameter search spaces
+        elif self.sklearn_model == "LightGBM":
+            if debug:
+                def search_space(trial):
+                    search_space = {
+                        "n_estimators": trial.suggest_categorical("n_estimators", [100]),
+                        "lags": trial.suggest_categorical("lags", [3]),
+                    }
+                    return search_space
+            else:
+                def search_space(trial):
+                    search_space = {
+                        "n_estimators": trial.suggest_int("n_estimators", 50, 300),
+                        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3),
+                        "max_depth": trial.suggest_int("max_depth", 3, 10),
+                        "num_leaves": trial.suggest_int("num_leaves", 20, 100),
+                        "lags": trial.suggest_categorical("lags", [6, 12, 24, 36, 48, 60, 72]),
+                    }
+                    return search_space
+        elif self.sklearn_model == "SVR":
+            if debug:
+                def search_space(trial):
+                    search_space = {
+                        "C": trial.suggest_categorical("C", [1.0]),
+                        "lags": trial.suggest_categorical("lags", [3]),
+                    }
+                    return search_space
+            else:
+                def search_space(trial):
+                    search_space = {
+                        "C": trial.suggest_float("C", 0.1, 10.0, log=True),
+                        "gamma": trial.suggest_float("gamma", 0.001, 1.0, log=True),
+                        "kernel": trial.suggest_categorical("kernel", ["rbf", "linear"]),
+                        "epsilon": trial.suggest_float("epsilon", 0.01, 0.5),
+                        "lags": trial.suggest_categorical("lags", [6, 12, 24, 36, 48, 60, 72]),
+                    }
+                    return search_space
 
         # Bayesian search hyperparameter and lags with skforecast/optuna
         # Lags used as predictors
@@ -357,7 +472,7 @@ class MLForecaster:
                 cv=cv,
                 search_space=search_space,
                 metric=MLForecaster.neg_r2_score,
-                n_trials=50, #increase this for more trials
+                n_trials=30, #increase this for more trials
                 random_state=123,
                 return_best=True,
             )
@@ -389,3 +504,34 @@ class MLForecaster:
         )
         self.logger.info("Number of optimal lags obtained: " + str(self.lags_opt))
         return df_pred_opt
+
+    def _calculate_metrics(self, y_true, y_pred):
+        """Calculate and log multiple evaluation metrics."""
+        # R² score - already used in main code
+        r2 = r2_score(y_true, y_pred)
+        # Root Mean Squared Error
+        rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+        # Mean Absolute Error
+        mae = mean_absolute_error(y_true, y_pred)
+        # Mean Absolute Percentage Error - with handling for zeros
+        mask = y_true != 0
+        if np.any(mask):
+            mape = np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100
+        else:
+            mape = np.nan
+        
+        self.logger.info(f"Model Evaluation Metrics:")
+        self.logger.info(f"R² Score: {r2:.4f}")
+        self.logger.info(f"RMSE: {rmse:.4f}")
+        self.logger.info(f"MAE: {mae:.4f}")
+        self.logger.info(f"MAPE: {mape:.2f}%")
+        
+        # Store metrics for later access
+        self.metrics = {
+            'r2': r2,
+            'rmse': rmse,
+            'mae': mae,
+            'mape': mape
+        }
+        
+        return self.metrics

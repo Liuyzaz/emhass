@@ -5,3 +5,12 @@ INFO - web_server - The logging is: INFO
 INFO - web_server - Using core emhass version: 0.13.3
 INFO - web_server - EMHASS server online, serving index.html...
 INFO - web_server - The data container dictionary is empty... Please launch an optimization task
+INFO - web_server -  >> Obtaining params: 
+INFO - web_server - Passed runtime parameters: {}
+INFO - web_server -  >> Setting input data dict
+INFO - web_server - Setting up needed data
+INFO - web_server - serving configuration.html...
+INFO - web_server - config.json does not exist, or has not been passed. config parameters may default to config_defaults.json
+INFO - web_server - you may like to generate the config.json file on the configuration page
+ERROR - web_server - Unable to access Home Assistant instance, check URL
+ERROR - web_server - If using addon, try setting url and token to 'empty'
