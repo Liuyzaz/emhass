@@ -104,6 +104,8 @@ class MLForecaster:
         self,
         split_date_delta: str | None = "48h",
         perform_backtest: bool | None = False,
+        # #added code for tuning days
+        tuning_days: str | None = "5days",
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
         r"""The fit method to train the ML model.
 
@@ -123,9 +125,12 @@ class MLForecaster:
         self.data_exo[self.var_model] = self.data[self.var_model]
         self.data_exo = self.data_exo.interpolate(method="linear", axis=0, limit=None)
         # train/test split
+        # self.date_train = (
+        #     self.data_exo.index[-1] - pd.Timedelta("5days") + self.data_exo.index.freq
+        # )  # The last 5 days
         self.date_train = (
-            self.data_exo.index[-1] - pd.Timedelta("5days") + self.data_exo.index.freq
-        )  # The last 5 days
+            self.data_exo.index[-1] - pd.Timedelta(tuning_days) + self.data_exo.index.freq
+        )  
         self.date_split = (
             self.data_exo.index[-1]
             - pd.Timedelta(split_date_delta)
@@ -352,7 +357,7 @@ class MLForecaster:
                 cv=cv,
                 search_space=search_space,
                 metric=MLForecaster.neg_r2_score,
-                n_trials=10,
+                n_trials=50, #increase this for more trials
                 random_state=123,
                 return_best=True,
             )

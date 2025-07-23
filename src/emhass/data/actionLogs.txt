@@ -1,0 +1,7 @@
+INFO - web_server - Launching the emhass webserver at: http://0.0.0.0:5000
+INFO - web_server - Home Assistant data fetch will be performed using url: https://myhass.duckdns.org/
+INFO - web_server - The data path is: C:\Users\26293\Desktop\WORK\emhass_git\emhass\src\emhass\data
+INFO - web_server - The logging is: INFO
+INFO - web_server - Using core emhass version: 0.13.3
+INFO - web_server - EMHASS server online, serving index.html...
+INFO - web_server - The data container dictionary is empty... Please launch an optimization task

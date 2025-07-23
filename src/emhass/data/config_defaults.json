@@ -2,7 +2,7 @@
   "logging_level": "INFO",
   "costfun": "cost",
   "optimization_time_step": 30,
-  "historic_days_to_retrieve": 9,
+  "historic_days_to_retrieve": 5,
   "method_ts_round": "nearest",
   "continual_publish": false,
   "data_path": "default",
